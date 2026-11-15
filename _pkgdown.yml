@@ -1,0 +1,14 @@
+destination: ../docs/cudaBio
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Principal component analysis
+  contents:
+  - cuda_pca
+
+articles:
+- title: Get started
+  contents:
+  - getting-started

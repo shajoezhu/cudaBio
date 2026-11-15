@@ -1,0 +1,24 @@
+Package: cudaBio
+Type: Package
+Title: GPU Principal Component Analysis via the rcupp Framework
+Version: 0.0.0.9000
+Authors@R: person("Joe", "Zhu", email = "sha.joe.zhu@gmail.com", role = c("aut", "cre"))
+Author: Joe Zhu [aut, cre]
+Maintainer: Joe Zhu <sha.joe.zhu@gmail.com>
+Description: A minimal downstream example of the 'rcupp' CUDA-for-Rcpp
+    framework. Computes principal components by power iteration using rcupp's
+    fixed GPU operators, reached through LinkingTo: rcupp and
+    R_GetCCallable(). It contains no CUDA code and no CUDA build logic of its
+    own, and works identically whether rcupp was built with a CUDA backend or
+    its CPU fallback. Intended as a template for bioinformatics p>>n
+    workloads (PCA / GWAS).
+License: Apache License 2.0
+Encoding: UTF-8
+Language: en-US
+Imports: rcupp, Rcpp
+LinkingTo: rcupp, Rcpp
+NeedsCompilation: yes
+Suggests: testthat (>= 3.0.0), knitr, rmarkdown, pkgdown
+Remotes: shajoezhu/rcupp
+VignetteBuilder: knitr
+Config/testthat/edition: 3

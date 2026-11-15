@@ -1,0 +1,49 @@
+---
+title: "Getting started with cudaBio"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with cudaBio}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(cudaBio)
+```
+
+`cudaBio` is a small downstream example of the `rcupp` framework. It computes
+principal components by power iteration using the fixed GPU operators reached
+through `LinkingTo: rcupp`. It contains no CUDA code of its own, so it runs
+unchanged whether `rcupp` was built with a CUDA backend or its CPU shim.
+
+## A first decomposition
+
+```{r pca}
+set.seed(1)
+X <- matrix(rnorm(60 * 5), 60, 5)
+
+pca <- cuda_pca(X, ncomp = 2)
+pca$values
+```
+
+The result is a list with the leading eigenvalues (`values`), the column
+`loadings`, the per-observation `scores`, and the number of power iterations
+(`iters`):
+
+```{r shapes}
+dim(pca$loadings)
+dim(pca$scores)
+pca$iters
+pca$backend
+```
+
+The loadings are unit vectors in the original feature space; the scores are
+the projected data. As with all `rcupp` consumers, `backend` is reported for
+information only and does not affect the result.
+
+## Why there is no GPU code here
+
+The package only includes `rcupp`'s public C header and calls the operators
+at run time. That is the point of the framework: a downstream package needs
+no toolkit, no device memory handling, and no CPU fallback logic of its own.

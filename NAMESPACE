@@ -1,0 +1,4 @@
+useDynLib(cudaBio, .registration = TRUE)
+export(cuda_pca)
+importFrom(rcupp, cuda_available)
+importFrom(Rcpp, evalCpp)
