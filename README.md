@@ -1,6 +1,6 @@
-# cudaBio
+# cudaBio <a href='https://github.com/shajoezhu/cudaBio'><img src="man/figures/logo.png" align="right" height="160" alt="cudaBio hexsticker" /></a>
 
-<img src="man/figures/logo.png" align="right" height="160" alt="cudaBio hexsticker" />
+<!-- start badges -->
 
 [![Check](https://github.com/shajoezhu/cudaBio/actions/workflows/check.yaml/badge.svg)](https://github.com/shajoezhu/cudaBio/actions/workflows/check.yaml)
 

@@ -1,7 +1,12 @@
+ABI
 CUDA
 GetCCallable
 LinkingTo
 Rcpp
 bioinformatics
+cudaFin
+cudaGlmnet
+github
+glmnet
 rcupp
 rcupp's
