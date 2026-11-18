@@ -42,6 +42,88 @@ The loadings are unit vectors in the original feature space; the scores are
 the projected data. As with all `rcupp` consumers, `backend` is reported for
 information only and does not affect the result.
 
+## A worked example: population structure
+
+A typical bioinformatics use of PCA is to reveal population structure in a
+matrix of genetic markers. Here three cohorts differ along two latent
+directions; `cuda_pca()` should recover that structure without being told the
+labels.
+
+```{r cohorts}
+set.seed(42)
+cohorts <- c("Cohort A", "Cohort B", "Cohort C")
+group <- rep(cohorts, each = 40)
+n <- length(group)
+p <- 30
+
+v1 <- rnorm(p)
+v2 <- rnorm(p)
+shift1 <- c(-3, 0, 3)[match(group, cohorts)]
+shift2 <- c(2, -2, 1)[match(group, cohorts)]
+X <- outer(shift1, v1) + outer(shift2, v2) +
+  matrix(rnorm(n * p, sd = 0.5), n, p)
+colnames(X) <- paste0("marker", seq_len(p))
+
+pca <- cuda_pca(X, ncomp = 4)
+pca$backend
+```
+
+The loadings are unit length and the eigenvalues decrease with each deflation
+step, as expected from power iteration:
+
+```{r checks}
+round(sqrt(colSums(pca$loadings^2)), 6)
+round(pca$values, 1)
+```
+
+### Scree plot
+
+`values` are the eigenvalues `||A v||^2` of the deflated matrix. Dividing by
+`sum(X^2)` (the trace of `X'X`, i.e. the total sum of squares) gives the
+fraction of variation explained by each component.
+
+```{r scree, fig.width = 6, fig.height = 4}
+frac <- pca$values / sum(X^2)
+barplot(100 * frac, names.arg = paste0("PC", seq_along(frac)),
+        ylab = "Variation explained (%)", col = "steelblue",
+        main = "Scree plot")
+```
+
+### Sample scores
+
+Projecting each sample onto the first two components separates the three
+cohorts, which is exactly the structure PCA is used to detect in genotype
+data.
+
+```{r scores, fig.width = 6, fig.height = 5}
+cols <- c("steelblue", "darkorange", "seagreen")
+idx <- match(group, cohorts)
+plot(pca$scores[, 1], pca$scores[, 2], col = cols[idx], pch = 19,
+     xlab = "PC1", ylab = "PC2", main = "Sample scores")
+abline(h = 0, v = 0, lty = 3, col = "grey")
+legend("topright", legend = cohorts, col = cols, pch = 19, bty = "n")
+```
+
+### Loadings
+
+The loadings are the per-marker weights of each component. A heat map shows
+which markers drive the separation along the leading components.
+
+```{r loadings, fig.width = 6, fig.height = 4}
+nr <- nrow(pca$loadings)
+nc <- ncol(pca$loadings)
+image(seq_len(nr), seq_len(nc), pca$loadings, axes = FALSE,
+      xlab = "Marker", ylab = "Component",
+      col = hcl.colors(32, "Blue-Red 3"),
+      main = "Loadings by component")
+axis(1)
+axis(2, at = seq_len(nc), labels = paste0("PC", seq_len(nc)), las = 1)
+box()
+```
+
+These plots use only base R graphics, so the vignette needs no plotting
+package beyond `knitr` and `rmarkdown`.
+
 ## Why there is no GPU code here
 
 The package only includes `rcupp`'s public C header and calls the operators
