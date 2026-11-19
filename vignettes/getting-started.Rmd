@@ -124,6 +124,79 @@ box()
 These plots use only base R graphics, so the vignette needs no plotting
 package beyond `knitr` and `rmarkdown`.
 
+## Checking against base R's SVD
+
+Power iteration is a numerical algorithm, so it is worth confirming its output
+against a trusted reference. On a matrix with a strong low-rank signal,
+`cuda_pca()` should reproduce the leading singular values and singular vectors
+from `svd()`.
+
+```{r svd-data}
+set.seed(7)
+n <- 60L
+p <- 12L
+Z <- matrix(rnorm(n * 3), n, 3)
+B <- matrix(rnorm(3 * p), 3, p)
+X0 <- Z %*% B + matrix(rnorm(n * p, sd = 0.1), n, p)
+```
+
+`X0` is nearly rank three, with a little added noise. Comparing the first
+three components:
+
+```{r svd-compare}
+k <- 3L
+fit <- cuda_pca(X0, ncomp = k)
+sv <- svd(X0)
+round(rbind(cuda_pca = fit$values, svd = sv$d[seq_len(k)]^2), 2)
+```
+
+The `values` are `||X v||^2`, i.e. the squared singular values, so the two
+rows agree. Each loading is a unit vector with an arbitrary sign; the absolute
+inner product with the corresponding right-singular vector is one for every
+component:
+
+```{r svd-loadings}
+round(abs(diag(crossprod(fit$loadings,
+                         sv$v[, seq_len(k), drop = FALSE]))), 4)
+```
+
+Deflation keeps the loadings orthonormal, so the scores are just the projection
+`X0 %*% loadings`:
+
+```{r svd-scores}
+round(max(abs(crossprod(fit$loadings) - diag(k))), 14)
+round(max(abs(fit$scores - X0 %*% fit$loadings)), 14)
+```
+
+## Low-rank reconstruction and choosing `ncomp`
+
+`cuda_pca()` removes one component from the working matrix at a time, so the
+rank-one pieces `scores[, c] %o% loadings[, c]` add back up to the original
+matrix minus a small residual. Keeping only the first `k` pieces gives a
+rank-`k` approximation; its relative error shows how many components the data
+really need.
+
+```{r reconstruct, fig.width = 6, fig.height = 4}
+K <- 8L
+fit8 <- cuda_pca(X0, ncomp = K)
+relerr <- vapply(seq_len(K), function(kk) {
+  Xhat <- fit8$scores[, seq_len(kk), drop = FALSE] %*%
+    t(fit8$loadings[, seq_len(kk), drop = FALSE])
+  sqrt(sum((X0 - Xhat)^2)) / sqrt(sum(X0^2))
+}, numeric(1))
+round(relerr, 3)
+
+plot(seq_len(K), relerr, type = "b", pch = 19, col = "steelblue",
+     xlab = "Number of components (k)", ylab = "Relative error",
+     main = "Reconstruction error vs number of components")
+abline(v = 3, lty = 2, col = "grey40")
+```
+
+The error drops sharply through the third component and then flattens, because
+the remaining components only fit noise. An elbow like this is a practical way
+to choose `ncomp` on real data: `cuda_pca()` stops being informative once the
+curve levels off.
+
 ## Why there is no GPU code here
 
 The package only includes `rcupp`'s public C header and calls the operators
