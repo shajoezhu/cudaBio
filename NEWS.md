@@ -1,3 +1,7 @@
+# cudaBio 0.0.0.9008
+
+* Development version bumped from 0.0.0.9007.
+
 # cudaBio 0.0.0.9007
 
 * Development version bumped from 0.0.0.9006.
